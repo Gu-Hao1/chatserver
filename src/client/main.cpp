@@ -28,6 +28,7 @@ vector<User> g_currentUserFriendList;
 // 记录当前登录用户的群组列表信息
 vector<Group> g_currentUserGroupList;
 
+//标记是否退出聊天界面
 bool isMainMenuRunning = false;
 
 // 用于读写线程之间的通信(信号量)
@@ -47,6 +48,45 @@ string getCurrentTime();
 
 // 主聊天页面程序
 void mainMenu(int);
+// "help" command handler
+void help(int fd = 0, string str = "");
+// "chat" command handler
+void chat(int, string);
+// "addfriend" command handler
+void addfriend(int, string);
+// "creategroup" command handler
+void creategroup(int, string);
+// "addgroup" command handler
+void addgroup(int, string);
+// "groupchat" command handler
+void groupchat(int, string);
+// "loginout" command handler
+void loginout(int, string);
+
+// 系统支持的客户端的命令列表
+unordered_map<string, string> commandMap = {
+    {"help", "显示所有的支持命令,格式help"},
+    {"chat", "一对一聊天,格式chat:friendid:message"},
+    {"addfriend", "添加好友,格式addfriend:friendid"},
+    {"creategroup", "创建群组,格式creategroup:groupname:groupdesc"},
+    {"addgroup", "加入群组,格式addgroup:groupid"},
+    {"groupchat", "群聊,格式groupchat:groupid:message"},
+    {"loginout", "注销,格式loginout"},
+};
+
+// 注册系统支持的客户端的命令列表
+// int:是clientfd
+// string:是客户端输入的消息
+unordered_map<string, function<void(int, string)>>
+    commandHandlerMap = {
+        {"help", help},
+        {"chat", chat},
+        {"addfriend", addfriend},
+        {"creategroup", creategroup},
+        {"addgroup", addgroup},
+        {"groupchat", groupchat},
+        {"loginout", loginout},
+};
 
 // 显示当前登录成功用户的基本的信息
 void showCurrentuserData()
@@ -125,8 +165,9 @@ int main(int argc, char **argv)
         cout << "3.quit" << endl;
         cout << "=========================" << endl;
         cout << "choice:";
-        int choice = 0;
-        cin >> choice;
+        char choice = 0;
+        string inputchoice;
+        cin >> inputchoice;
         cin.get(); // 读掉缓冲区残留的回车
 
         // 初始化信号量
@@ -134,10 +175,22 @@ int main(int argc, char **argv)
         // 开启子线程负责接收服务器的返回数据
         std::thread readTask(readTaskHandler, clientfd); // pthread_create
         readTask.detach();
-
+        
+        //处理用户输入的选择不合法问题
+        if(inputchoice.length()>1)
+        {   
+            cerr << "invalid input!" << endl;
+            continue;
+        }
+        choice=inputchoice[0];
+        if(!(isdigit(choice)))
+        {
+            cerr << "invalid input!" << endl;
+            continue;
+        }
         switch (choice)
         {
-        case 1:
+        case '1':
             // login业务
             {
                 /*
@@ -180,7 +233,7 @@ int main(int argc, char **argv)
                 }
             }
             break;
-        case 2:
+        case '2':
             // regist业务
             {
                 // 注册需要用户名+密码
@@ -207,59 +260,20 @@ int main(int argc, char **argv)
                 sem_wait(&rwsem);
             }
             break;
-        case 3:
+        case '3':
             // quit业务
             {
                 close(clientfd);
                 sem_destroy(&rwsem); // 释放信号量资源
                 exit(0);
             }
+            break;
         default:
             cerr << "invalid input!" << endl;
         }
     }
     return 0;
 }
-
-// "help" command handler
-void help(int fd = 0, string str = "");
-// "chat" command handler
-void chat(int, string);
-// "addfriend" command handler
-void addfriend(int, string);
-// "creategroup" command handler
-void creategroup(int, string);
-// "addgroup" command handler
-void addgroup(int, string);
-// "groupchat" command handler
-void groupchat(int, string);
-// "loginout" command handler
-void loginout(int, string);
-
-// 系统支持的客户端的命令列表
-unordered_map<string, string> commandMap = {
-    {"help", "显示所有的支持命令,格式help"},
-    {"chat", "一对一聊天,格式chat:friendid:message"},
-    {"addfriend", "添加好友,格式addfriend:friendid"},
-    {"creategroup", "创建群组,格式creategroup:groupname:groupdesc"},
-    {"addgroup", "加入群组,格式addgroup:groupid"},
-    {"groupchat", "群聊,格式groupchat:groupid:message"},
-    {"loginout", "注销,格式loginout"},
-};
-
-// 注册系统支持的客户端的命令列表
-// int:是clientfd
-// string:是客户端输入的消息
-unordered_map<string, function<void(int, string)>>
-    commandHandlerMap = {
-        {"help", help},
-        {"chat", chat},
-        {"addfriend", addfriend},
-        {"creategroup", creategroup},
-        {"addgroup", addgroup},
-        {"groupchat", groupchat},
-        {"loginout", loginout},
-};
 
 // 主聊天页面程序
 void mainMenu(int clientfd)
@@ -507,7 +521,7 @@ void doLoginResoponse(json &reponsejs)
         g_isLoginSuccess = true;
     }
 }
-// 处理登录响应的业务逻辑
+// 处理注册响应的业务逻辑
 void doRegistResoponse(json &responsejs)
 {
     if (0 != responsejs["errno"].get<int>()) // 注册失败

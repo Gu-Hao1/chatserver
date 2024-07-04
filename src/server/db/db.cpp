@@ -22,7 +22,7 @@ MySQL::~MySQL()
 // 连接数据库
 bool MySQL::connect()
 {
-    //问题在连接数据库
+    
     MYSQL *p = mysql_real_connect(_conn, server.c_str(), user.c_str(),
                                   password.c_str(), dbname.c_str(), 3306, nullptr, 0);
     if (p != nullptr)

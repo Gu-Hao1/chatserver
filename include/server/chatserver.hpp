@@ -27,7 +27,7 @@ private:
                Timestamp receiveTime);
     
     TcpServer _server;//组合的muduo库，实现服务器功能的对象
-    
+
     EventLoop *_loop; //指向事件循环对象的指针
 
 };

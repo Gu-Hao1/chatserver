@@ -30,8 +30,11 @@ int main(int argc,char** argv)
         创建服务器对象
     */
     EventLoop loop;//相当于epoll
+
     InetAddress addr(ip,port);//服务器的地址
+
     string server_name="ChatServer";//服务器的名称
+    
     //创建服务器对象
     ChatServer server(&loop,addr,server_name);
 
