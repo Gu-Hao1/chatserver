@@ -38,7 +38,7 @@ private:
     //hiredis同步上下文对象，负责publish消息
     redisContext *_publish_context;
 
-    //hiredis同步上下文对象，负责subscribe消息
+    //hiredis同步上下文对象，负责subscribe消息  
     redisContext *_subscribe_context;
 
     //回调操作，收到订阅的消息，给service层上报

@@ -153,6 +153,12 @@ int main(int argc, char **argv)
         close(clientfd);
         exit(-1);
     }
+    // 初始化信号量
+    sem_init(&rwsem, 0, 0);
+    // 开启子线程负责接收服务器的返回数据        
+    std::thread readTask(readTaskHandler, clientfd); // pthread_create
+    readTask.detach();
+
 
     // 成功连接服务器
     // main线程用于接收用户的输入，负责发送数据
@@ -170,11 +176,6 @@ int main(int argc, char **argv)
         cin >> inputchoice;
         cin.get(); // 读掉缓冲区残留的回车
 
-        // 初始化信号量
-        sem_init(&rwsem, 0, 0);
-        // 开启子线程负责接收服务器的返回数据
-        std::thread readTask(readTaskHandler, clientfd); // pthread_create
-        readTask.detach();
         
         //处理用户输入的选择不合法问题
         if(inputchoice.length()>1)
@@ -225,6 +226,7 @@ int main(int argc, char **argv)
                 }
                 // 等待信号量，由子线程处理完登陆的的响应消息之后，通知这里
                 sem_wait(&rwsem);
+                
                 if (g_isLoginSuccess)
                 {
                     isMainMenuRunning = true;
